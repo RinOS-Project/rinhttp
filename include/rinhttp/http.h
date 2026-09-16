@@ -62,7 +62,8 @@ int rin_http_token_equal(const uint8_t* left, size_t left_size,
 int rin_http_field_value_has_token(const uint8_t* data, size_t size,
                                    const uint8_t* token, size_t token_size);
 
-/* Parse one Content-Length field value after optional OWS. */
+/* Parse one Content-Length field value after optional OWS.  value is cleared
+ * before validation, so a failure never leaves a previous length published. */
 int rin_http_parse_content_length(const uint8_t* data, size_t size,
                                   uint64_t* value);
 
@@ -71,12 +72,14 @@ int rin_http_parse_content_length(const uint8_t* data, size_t size,
 int rin_http_transfer_encoding_final_chunked(const uint8_t* data, size_t size);
 
 /* Validate media type plus parameters and copy its lowercase type/subtype
- * (without parameters) to a NUL-terminated caller buffer. */
+ * (without parameters) to a NUL-terminated caller buffer.  output is empty
+ * and output_size is zero on failure when output has writable capacity. */
 int rin_http_normalize_content_type(const uint8_t* data, size_t size,
                                     char* output, size_t output_capacity,
                                     size_t* output_size);
 
-/* Split an Authorization field into its scheme and opaque credentials view. */
+/* Split an Authorization field into its scheme and opaque credentials view.
+ * The output view is cleared before validation. */
 int rin_http_parse_authorization(const uint8_t* data, size_t size,
                                  RinHttpAuthorization* authorization);
 
@@ -94,7 +97,8 @@ int rin_http_build_basic_authorization(
 int rin_http_parse_response_head(const uint8_t* data, size_t size,
                                  RinHttpResponseHead* output);
 
-/* Parse the IMF-fixdate HTTP-date form into UTC Unix seconds. */
+/* Parse the IMF-fixdate HTTP-date form into UTC Unix seconds.  The output is
+ * cleared before validation. */
 int rin_http_parse_imf_fixdate(const uint8_t* data, size_t size,
                                int64_t* unix_seconds);
 
