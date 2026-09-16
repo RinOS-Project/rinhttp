@@ -42,11 +42,21 @@ static size_t http_trim_end(const uint8_t* data, size_t begin, size_t size)
     return size;
 }
 
+static int http_cstring_size(const char* text, size_t* size_out)
+{
+    size_t size = 0u;
+    if (text == NULL || size_out == NULL) return 0;
+    while (size < RIN_HTTP_MAX_CSTRING_BYTES && text[size] != '\0') ++size;
+    if (size == RIN_HTTP_MAX_CSTRING_BYTES) return 0;
+    *size_out = size;
+    return 1;
+}
+
 static int http_slice_literal(RinHttpSlice slice, const char* literal)
 {
-    size_t length = 0u;
+    size_t length;
     size_t index;
-    while (literal[length] != '\0') ++length;
+    if (!http_cstring_size(literal, &length)) return 0;
     if (slice.size != length) return 0;
     for (index = 0u; index < length; ++index)
         if (http_lower(slice.data[index]) != http_lower((uint8_t)literal[index]))
@@ -592,9 +602,8 @@ int rin_http_parse_imf_fixdate(const uint8_t* data, size_t size,
 
 static int http_name_equal_literal(RinHttpSlice slice, const char* name)
 {
-    size_t index = 0u;
-    while (name[index] != '\0') ++index;
-    if (slice.size != index) return 0;
+    size_t index;
+    if (!http_cstring_size(name, &index) || slice.size != index) return 0;
     for (index = 0u; index < slice.size; ++index)
         if (http_lower(slice.data[index]) != http_lower((uint8_t)name[index]))
             return 0;

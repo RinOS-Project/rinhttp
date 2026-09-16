@@ -12,6 +12,9 @@ extern "C" {
 #define RIN_HTTP_MAX_DATE_BYTES 64u
 #define RIN_HTTP_MAX_RESPONSE_HEADER_BYTES 65536u
 #define RIN_HTTP_MAX_BASIC_CREDENTIAL_BYTES 4096u
+/* C-string names accepted by the cache-directive compatibility entry point
+ * are bounded by the common response-head budget before they are scanned. */
+#define RIN_HTTP_MAX_CSTRING_BYTES RIN_HTTP_MAX_RESPONSE_HEADER_BYTES
 
 typedef enum RinHttpStatus {
     RIN_HTTP_OK = 0,
@@ -104,7 +107,8 @@ int rin_http_parse_imf_fixdate(const uint8_t* data, size_t size,
 
 /* Find one Cache-Control directive. Returns OK when found, NOT_FOUND when
  * absent, and MALFORMED for an invalid directive list. value is empty for a
- * valueless directive and points into the caller-owned input otherwise. */
+ * valueless directive and points into the caller-owned input otherwise. name
+ * must be NUL-terminated within RIN_HTTP_MAX_CSTRING_BYTES. */
 int rin_http_cache_directive_find(const uint8_t* data, size_t size,
                                   const char* name, RinHttpSlice* value);
 
