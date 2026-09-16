@@ -123,6 +123,7 @@ int rin_http_parse_content_length(const uint8_t* data, size_t size,
     size_t end;
     size_t index;
     uint64_t parsed = 0u;
+    if (value != NULL) *value = 0u;
     if (value == NULL || (size != 0u && data == NULL))
         return RIN_HTTP_INVALID_ARGUMENT;
     begin = http_trim_begin(data, size);
@@ -242,6 +243,7 @@ int rin_http_normalize_content_type(const uint8_t* data, size_t size,
         return RIN_HTTP_INVALID_ARGUMENT;
     }
     *output_size = 0u;
+    if (output != NULL && output_capacity != 0u) output[0] = '\0';
     offset = http_trim_begin(data, size);
     size = http_trim_end(data, offset, size);
     type_start = offset;
@@ -278,12 +280,13 @@ int rin_http_parse_authorization(const uint8_t* data, size_t size,
     size_t scheme_start;
     size_t credential_start;
     size_t end;
-    if (authorization == NULL || (size != 0u && data == NULL))
-        return RIN_HTTP_INVALID_ARGUMENT;
+    if (authorization == NULL) return RIN_HTTP_INVALID_ARGUMENT;
     authorization->scheme.data = NULL;
     authorization->scheme.size = 0u;
     authorization->credentials.data = NULL;
     authorization->credentials.size = 0u;
+    if (size != 0u && data == NULL)
+        return RIN_HTTP_INVALID_ARGUMENT;
     offset = http_trim_begin(data, size);
     end = http_trim_end(data, offset, size);
     scheme_start = offset;
@@ -538,6 +541,7 @@ int rin_http_parse_imf_fixdate(const uint8_t* data, size_t size,
     unsigned index;
     int month;
     unsigned day;
+    if (unix_seconds != NULL) *unix_seconds = 0;
     if (data == NULL || unix_seconds == NULL) return RIN_HTTP_INVALID_ARGUMENT;
     if (size != 29u) return RIN_HTTP_MALFORMED;
     if (data[3] != ',' || data[4] != ' ' || data[7] != ' ' ||
