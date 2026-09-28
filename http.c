@@ -548,9 +548,11 @@ int rin_http_parse_imf_fixdate(const uint8_t* data, size_t size,
     unsigned day_tens, day_ones, hour_tens, hour_ones, minute_tens;
     unsigned minute_ones, second_tens, second_ones;
     unsigned year = 0u;
+    unsigned weekday = 0u;
     unsigned index;
     int month;
     unsigned day;
+    int64_t day_number;
     if (unix_seconds != NULL) *unix_seconds = 0;
     if (data == NULL || unix_seconds == NULL) return RIN_HTTP_INVALID_ARGUMENT;
     if (size != 29u) return RIN_HTTP_MALFORMED;
@@ -563,7 +565,10 @@ int rin_http_parse_imf_fixdate(const uint8_t* data, size_t size,
         for (index = 0u; index < 7u; ++index)
             if (data[0] == (uint8_t)weekdays[index][0] &&
                 data[1] == (uint8_t)weekdays[index][1] &&
-                data[2] == (uint8_t)weekdays[index][2]) weekday_valid = 1;
+                data[2] == (uint8_t)weekdays[index][2]) {
+                weekday = index;
+                weekday_valid = 1;
+            }
         if (!weekday_valid) return RIN_HTTP_MALFORMED;
     }
     if (!http_fixed_digit(data, 5u, &day_tens) ||
@@ -592,8 +597,10 @@ int rin_http_parse_imf_fixdate(const uint8_t* data, size_t size,
                               (year % 100u != 0u || year % 400u == 0u)) ? 29u : 28u) :
                (month == 4 || month == 6 || month == 9 || month == 11 ? 30u : 31u)))
         return RIN_HTTP_MALFORMED;
-    *unix_seconds = (http_days_from_civil((int)year, (unsigned)month,
-                                          day) * 86400ll) +
+    day_number = http_days_from_civil((int)year, (unsigned)month, day);
+    if ((unsigned)((day_number % 7ll + 7ll) % 7ll + 4ll) % 7u != weekday)
+        return RIN_HTTP_MALFORMED;
+    *unix_seconds = (day_number * 86400ll) +
                     (int64_t)(hour_tens * 10u + hour_ones) * 3600ll +
                     (int64_t)(minute_tens * 10u + minute_ones) * 60ll +
                     (int64_t)(second_tens * 10u + second_ones);
