@@ -191,18 +191,17 @@ static int http_parameter_list(const uint8_t* data, size_t size, size_t* offset)
             if (cursor == name_start) return 0;
         }
         while (cursor < size && http_ows(data[cursor])) ++cursor;
-        if (cursor < size && data[cursor] == '=') {
-            ++cursor;
-            while (cursor < size && http_ows(data[cursor])) ++cursor;
-            if (cursor < size && data[cursor] == '"') {
-                if (!http_quoted_valid(data, size, &cursor)) return 0;
-            } else {
-                size_t value_start = cursor;
-                while (cursor < size && http_tchar(data[cursor])) ++cursor;
-                if (cursor == value_start) return 0;
-            }
-            while (cursor < size && http_ows(data[cursor])) ++cursor;
+        if (cursor >= size || data[cursor] != '=') return 0;
+        ++cursor;
+        while (cursor < size && http_ows(data[cursor])) ++cursor;
+        if (cursor < size && data[cursor] == '"') {
+            if (!http_quoted_valid(data, size, &cursor)) return 0;
+        } else {
+            size_t value_start = cursor;
+            while (cursor < size && http_tchar(data[cursor])) ++cursor;
+            if (cursor == value_start) return 0;
         }
+        while (cursor < size && http_ows(data[cursor])) ++cursor;
         *offset = cursor;
     }
     return 1;
@@ -269,6 +268,9 @@ int rin_http_normalize_content_type(const uint8_t* data, size_t size,
         if (subtype_size == 0u || parameters != 1 || offset != size)
             return RIN_HTTP_MALFORMED;
     }
+    if (type_size > SIZE_MAX - 1u ||
+        subtype_size > SIZE_MAX - type_size - 1u)
+        return RIN_HTTP_OVERFLOW;
     written = type_size + 1u + subtype_size;
     if (written >= output_capacity || output == NULL)
         return RIN_HTTP_BUFFER_TOO_SMALL;
