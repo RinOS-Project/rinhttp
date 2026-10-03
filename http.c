@@ -158,7 +158,12 @@ static int http_quoted_valid(const uint8_t* data, size_t size, size_t* offset)
     while (cursor < size && data[cursor] != '"') {
         uint8_t value = data[cursor++];
         if (value == '\\') {
-            if (cursor >= size || data[cursor] == '\r' || data[cursor] == '\n')
+            /* RFC 9110 quoted-pair permits HTAB, SP, VCHAR, or obs-text
+             * after the escape.  Do not let an escaped NUL/control/DEL pass
+             * into a header value and become a parser-specific terminator. */
+            if (cursor >= size || data[cursor] == '\r' || data[cursor] == '\n' ||
+                (data[cursor] != '\t' && data[cursor] < 0x20u) ||
+                data[cursor] == 0x7fu)
                 return 0;
             ++cursor;
         } else if (value < 0x20u || value == 0x7fu || value == '\r' ||
