@@ -621,6 +621,31 @@ static int http_name_equal_literal(RinHttpSlice slice, const char* name)
     return 1;
 }
 
+static size_t http_cache_directive_end(const uint8_t* data, size_t start,
+                                       size_t size)
+{
+    size_t offset;
+    int quoted = 0;
+    int escaped = 0;
+    for (offset = start; offset < size; ++offset) {
+        uint8_t value = data[offset];
+        if (quoted != 0) {
+            if (escaped != 0) {
+                escaped = 0;
+            } else if (value == '\\') {
+                escaped = 1;
+            } else if (value == '"') {
+                quoted = 0;
+            }
+        } else if (value == '"') {
+            quoted = 1;
+        } else if (value == ',') {
+            break;
+        }
+    }
+    return offset;
+}
+
 int rin_http_cache_directive_find(const uint8_t* data, size_t size,
                                   const char* name, RinHttpSlice* value)
 {
@@ -641,7 +666,7 @@ int rin_http_cache_directive_find(const uint8_t* data, size_t size,
         while (offset < size && http_ows(data[offset])) ++offset;
         if (offset == size) return RIN_HTTP_NOT_FOUND;
         start = offset;
-        while (offset < size && data[offset] != ',') ++offset;
+        offset = http_cache_directive_end(data, start, size);
         end = http_trim_end(data, start, offset);
         if (end == start) return RIN_HTTP_MALFORMED;
         equals = start;
