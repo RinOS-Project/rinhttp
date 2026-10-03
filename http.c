@@ -288,6 +288,7 @@ int rin_http_normalize_content_type(const uint8_t* data, size_t size,
 int rin_http_parse_authorization(const uint8_t* data, size_t size,
                                  RinHttpAuthorization* authorization)
 {
+    RinHttpAuthorization candidate = {0};
     size_t offset;
     size_t scheme_start;
     size_t credential_start;
@@ -304,16 +305,17 @@ int rin_http_parse_authorization(const uint8_t* data, size_t size,
     scheme_start = offset;
     while (offset < end && http_tchar(data[offset])) ++offset;
     if (offset == scheme_start) return RIN_HTTP_MALFORMED;
-    authorization->scheme.data = data + scheme_start;
-    authorization->scheme.size = offset - scheme_start;
+    candidate.scheme.data = data + scheme_start;
+    candidate.scheme.size = offset - scheme_start;
     credential_start = offset;
     while (credential_start < end && http_ows(data[credential_start])) ++credential_start;
     if (credential_start == end) return RIN_HTTP_MALFORMED;
     for (offset = credential_start; offset < end; ++offset)
         if (data[offset] == '\r' || data[offset] == '\n' || data[offset] == 0u)
             return RIN_HTTP_MALFORMED;
-    authorization->credentials.data = data + credential_start;
-    authorization->credentials.size = end - credential_start;
+    candidate.credentials.data = data + credential_start;
+    candidate.credentials.size = end - credential_start;
+    *authorization = candidate;
     return RIN_HTTP_OK;
 }
 
